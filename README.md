@@ -34,3 +34,8 @@ cargo build --release
 ./target/release/tccd-battlecode-engine-rs --map "maps/default.map25" "player1" "player2"
 ```
 ## Contributing
+Contributions are highly welcome! Whether you are a seasoned Rust developer or just starting, there are many ways to help. Please read our Contributing Guide to get started.
+## License
+This project is licensed under the GNU GPL v3 License. See the [LICENSE](LICENSE) file for details.
+## Acknowledgements
+A huge thank you to the **MIT Battlecode developers and community** for creating and maintaining such an incredible learning platform. This project would not exist without their hard work and dedication.
