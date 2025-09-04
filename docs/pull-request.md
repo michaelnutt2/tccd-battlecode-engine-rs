@@ -1,7 +1,7 @@
 # Life Cycle of a Pull Request
 It’s important to break your feature down into small pieces first. Each piece should become its own pull request. Small, focused pull requests are easier to review and merge.
 Once you know what the first small piece of your feature will be, follow this general process while working:
-1. [Create a new branch, following our Git Workflow.](docs/GIT.md)
+1. [Create a new branch, following our Git Workflow.](/docs/GIT.md)
 2. Make your first commit. We need at least one commit to create the initial pull request.
 3. Open the pull request on GitHub. Prefix the title with a general area, e.g. `feat(engine):` or `fix(world):`. Use [Conventional Commits](https://www.conventionalcommits.org/) as a guideline.
   - Write a detailed description of the problem you are solving, the part of the engine it affects, and how you are solving it.
