@@ -1,0 +1,372 @@
+namespace battlecode.schema;
+
+struct Vec {
+    x: int = 0;
+    y: int = 0;
+}
+
+table VecTable {
+    xs: [int];
+    ys: [int];
+}
+
+enum RobotType: byte {
+    NONE,
+    PAINT_TOWER,
+    MONEY_TOWER,
+    DEFENSE_TOWER,
+    SOLDIER,
+    SPLASHER,
+    MOPPER
+}
+
+enum WinType: byte {
+    RESIGNATION,
+    MAJORITY_PAINTED,
+    ALL_UNITS_DESTROYED,
+    AREA_PAINTED,
+    MORE_TOWERS,
+    MORE_MONEY,
+    MORE_STORED_PAINT,
+    MORE_ROBOTS,
+    COIN_FLIP
+}
+
+enum DieType: byte {
+    UNKNOWN,
+    EXCEPTION
+}
+
+table RobotTypeMetadata {
+    type: RobotType;
+    action_cooldown: int;
+    movement_cooldown: int;
+    base_health: int;
+    base_paint: int;
+    max_paint: int;
+    action_radius_squared: int;
+    vision_radius_squared: int;
+    message_radius_squared: int;
+    bytecode_limit: int;
+}
+
+table TeamData {
+    name: string;
+    package_name: string;
+    team_id: byte;
+}
+
+table GameplayConstants {
+}
+
+/// Generic action representing damage to a robot
+table DamageAction {
+    /// Id of the damage target
+    id: ushort;
+    damage: ushort;
+}
+
+/// Visually indicate a tile has been painted
+table PaintAction {
+    loc: ushort;
+    is_secondary: byte;
+}
+
+/// Visually indicate a tile's paint has been removed
+table UnpaintAction {
+    loc: ushort;
+}
+
+/// Visually indicate a tile marked with a color
+table MarkAction {
+    loc: ushort;
+    is_secondary: byte;
+}
+
+/// Visually indicate a tile's marker has been removed
+table UnmarkAction {
+    loc: ushort;
+}
+
+/// Visually indicate an attack
+table AttackAction {
+    /// Id of the attack target
+    id: ushort;
+}
+
+/// Visually indicate a splash attack
+table SplashAction {
+    /// Location of the splash attack
+    loc: ushort;
+}
+
+/// Visually indicate a mop attack
+table MopAction {
+    /// Ids of the mopped targets, possibly 0
+    id0: ushort;
+    id1: ushort;
+    id2: ushort;
+}
+
+/// Visually indicate a tower being built
+table BuildAction {
+    /// Id of the tower bot
+    id: ushort;
+}
+
+/// Visually indicate transferring paint from one robot to another
+table TransferAction {
+    /// Id of the transfer target
+    id: ushort;
+    amount: int;
+}
+
+/// Visually indicate messaging from one robot to another
+table MessageAction {
+    /// Id of the message target
+    id: ushort;
+    data: int;
+}
+
+/// Indicate that this robot was spawned on this turn
+table SpawnAction {
+    /// Id of the bot that spawned
+    id: ushort;
+    x: ushort;
+    y: ushort;
+    team: byte;
+    robot_type: RobotType;
+}
+
+/// Indicates that a robot died and should be removed
+table DieAction {
+    /// Id of the robot that died
+    id: ushort;
+    die_type: DieType;
+}
+
+/// Visually indicate that a tower was upgraded
+table UpgradeAction {
+    /// Id of the upgraded tower
+    id: ushort;
+    new_health: int;
+    new_max_health: int;
+    new_paint: int;
+    new_max_paint: int;
+}
+
+/// Update the indicator string for this robot
+table IndicatorStringAction {
+    value: string;
+}
+
+/// Update the indicator dot for this robot
+table IndicatorDotAction {
+    loc: ushort;
+    color_hex: int;
+}
+
+/// Update the indicator line for this robot
+table IndicatorLineAction {
+    start_loc: ushort;
+    end_loc: ushort;
+    color_hex: int;
+}
+
+union Action {
+    DamageAction,
+    PaintAction,
+    UnpaintAction,
+    MarkAction,
+    UnmarkAction,
+    AttackAction,
+    SplashAction,
+    MopAction,
+    BuildAction,
+    TransferAction,
+    MessageAction,
+    SpawnAction,
+    DieAction,
+    UpgradeAction,
+    IndicatorStringAction,
+    IndicatorDotAction,
+    IndicatorLineAction
+}
+
+// A list of initial bodies to be placed on the map.
+table InitialBodyTable {
+    spawn_actions: [SpawnAction];
+}
+
+table GameMap {
+    name: string;
+    size: Vec;
+    symmetry: int; // The map symmetry: 0 for rotation, 1 for horizontal, 2 for vertical.
+    initial_bodies: InitialBodyTable;
+    random_seed: int;
+    walls: [bool];
+    paint: [byte];
+    ruins: VecTable;
+    paint_patterns: [int];// resource pattern, defense tower pattern, money tower pattern, paint tower pattern.
+}
+
+/// Markers for events during the game indicated by the user
+table TimelineMarker{
+    team: byte;
+    round: int;
+    color_hex: int;
+    label: string;
+}
+
+//========================================================================================
+// Profiler tables
+
+/// These tables are set-up so that they match closely with speedscope's file format documented at
+/// https://github.com/jlfwong/speedscope/wiki/Importing-from-custom-sources.
+/// The client uses speedscope to show the recorded data in an interactive interface.
+
+/// A single event in a profile. Represents either an open event (meaning a
+/// method has been entered) or a close event (meaning the method was exited).
+table ProfilerEvent {
+    /// Whether this is an open event (true) or a close event (false).
+    is_open: bool;
+    /// The bytecode counter at the time the event occurred.
+    at: int;
+    /// The index of the method name in the ProfilerFile.frames array.
+    frame: int;
+}
+
+/// A profile contains all events and is labeled with a name.
+table ProfilerProfile {
+    /// The display-friendly name of the profile.
+    name: string;
+    /// The events that occurred in the profile.
+    events: [ProfilerEvent];
+}
+
+/// A profiler file is a collection of profiles.
+/// When profiling is enabled there is one of these per team per match.
+table ProfilerFile {
+    /// The method names that are referred to in the events.
+    frames: [string];
+    /// The recorded profiles, one per robot.
+    profiles: [ProfilerProfile];
+}
+//========================================================================================
+
+
+/// Events
+
+/// An Event is a single step that needs to be processed.
+/// A saved game simply consists of a long list of Events.
+/// Events can be divided by either being sent separately (e.g. as separate
+/// websocket messages), or by being wrapped with a GameWrapper.
+/// A game consists of a series of matches; a match consists of a series of
+/// rounds, and is played on a single map. Each round is a single simulation
+/// step.
+union Event {
+    /// There should only be one GameHeader, at the start of the stream.
+    GameHeader,
+    /// There should be one MatchHeader at the start of each match.
+    MatchHeader,
+    /// A single simulation step. A round may be skipped if
+    /// nothing happens during its time.
+    Round,
+    /// There should be one MatchFooter at the end of each simulation step.
+    MatchFooter,
+    /// There should only be one GameFooter, at the end of the stream.
+    GameFooter
+}
+
+/// The first event sent in the game. Contains all metadata about the game.
+table GameHeader {
+    spec_version: string;
+    teams: [TeamData];
+    robot_type_metadata: [RobotTypeMetadata];
+    constants: GameplayConstants;
+}
+
+/// The final event sent in the game.
+table GameFooter {
+    /// The ID of the winning team of the game.
+    winner: byte;
+}
+
+/// Sent to start a match.
+table MatchHeader {
+    map: GameMap;
+    max_rounds: int;
+}
+
+/// Sent to end a match.
+table MatchFooter {
+    /// The ID of the winning team.
+    winner: byte;
+    /// The reason for winning
+    win_type: WinType;
+    /// The number of rounds played.
+    total_rounds: int;
+    /// Markers for this match.
+    timeline_markers: [TimelineMarker];
+    /// Profiler data for team A and B if profiling is enabled.
+    profiler_files: [ProfilerFile];
+}
+
+table ActionWrapper {
+    action: Action;
+}
+
+table Turn {
+    robot_id: int;
+    health: int;
+    paint: int;
+    move_cooldown: int;
+    action_cooldown: int;
+    bytecodes_used: int;
+    x: ubyte;
+    y: ubyte;
+    actions: [ActionWrapper];
+}
+
+/// A single time-step in a Game, which contains a list of robot turns
+table Round {
+    /// The IDs of teams in the Game.
+    team_ids: [int];
+    /// The total amount of resource this round per team
+    team_resource_aounts: [int];
+    /// The total paint coverage percent per team, mult by 10 (i.e. 70.5% is 705)
+    team_coverage_amounts: [int];
+    /// The total number of active resource patterns per team
+    team_resource_pattern_amounts: [int];
+
+    /// Ordered turn data for each robot during the round
+    turns: [Turn];
+
+    /// The IDs of bodies that died at the end of the round, with no attributable cause.
+    died_ids: [int];
+
+    /// The first sent Round in a match should have index 1. (The starting state,
+    /// created by the MatchHeader, can be thought to have index 0.)
+    /// It should increase by one for each following round.
+    round_id: int;
+}
+
+/// Necessary due to flatbuffers requiring unions to be wrapped in tables.
+table EventWrapper {
+    e: Event;
+}
+
+/// If events are not otherwise delimited, this wrapper structure
+/// allows a game to be stored in a single buffer.
+/// The first event will be a GameHeader; the last event will be a GameFooter.
+/// matchHeaders[0] is the index of the 0th match header in the event stream,
+/// corresponding to matchFooters[0]. These indices allow quick traversal of
+/// the file.
+table GameWrapper {
+    /// The series of events comprising the game.
+    events: [EventWrapper];
+    /// The indices of the headers of the matches, in order.
+    match_headers: [int];
+    /// The indices of the footers of the matches, in order.
+    match_footers: [int];
+}
